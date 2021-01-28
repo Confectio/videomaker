@@ -1,0 +1,68 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: e90b7842e5ac4eee946a9491f349c7ba27d06e5d24ef27a1c215d8604536eb4b
+
+name:           videomaker
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/Confectio/videomaker#readme>
+homepage:       https://github.com/Confectio/videomaker#readme
+bug-reports:    https://github.com/Confectio/videomaker/issues
+author:         Leonard Fichtner
+maintainer:     leonard.fichtner@web.de
+copyright:      2021 Leonard Fichtner
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/Confectio/videomaker
+
+library
+  exposed-modules:
+      Lib
+  other-modules:
+      Paths_videomaker
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+    , stb-image-redux
+    , vector
+  default-language: Haskell2010
+
+executable videomaker-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_videomaker
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , stb-image-redux
+    , vector
+    , videomaker
+  default-language: Haskell2010
+
+test-suite videomaker-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_videomaker
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , stb-image-redux
+    , vector
+    , videomaker
+  default-language: Haskell2010
