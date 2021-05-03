@@ -5,7 +5,7 @@ import Data.STBImage
 import System.Environment
 import Data.Char
 import Data.Maybe
-import Options
+import Options.Applicative
 
 type Amount = Int
 type FormatWriter = (FilePath -> Image RGBColor -> IO ())
@@ -24,14 +24,14 @@ formats = [("png", writePNG),
 dirpath :: Parser String
 dirpath = strOption
   (long "directory"
-  <> short "dir"
+  <> short 'd'
   <> metavar "Path"
   <> help "Path of the directory, where the frames should be saved")
 
 name :: Parser String
 name = strOption
     (long "name"
-    <> short "n"
+    <> short 'n'
     <> metavar "Name"
     <> help "Name of the frames. Every frame will be named according to the pattern [Name][Framenr].[extension]")
 
@@ -43,8 +43,8 @@ validateFormat s =  if isNothing (lookup format formats) then
     where format = map toLower s
 
 format :: Parser Format
-format = argument (eitherReader validateFormat) (long "format"
-    <> short "f"
+format = option (eitherReader validateFormat) (long "format"
+    <> short 'f'
     <> metavar "Format"
     <> value "png"
     <> help "Format of the frames. Only PNG, TGA and BMP are supported, default is PNG.")
@@ -52,21 +52,21 @@ format = argument (eitherReader validateFormat) (long "format"
 amount :: Parser Int
 amount = option auto
     (long "amount"
-    <> short "a"
+    <> short 'a'
     <> metavar "Amount of Frames"
     <> help "The amount of frames that should be created")
 
 width :: Parser Int
 width = option auto
     (long "width"
-    <> short "w"
+    <> short 'w'
     <> metavar "Width"
     <> help "Width of the frames")
 
 height :: Parser Int
 height = option auto
     (long "height"
-    <> short "h"
+    <> short 'h'
     <> metavar "Height"
     <> help "Height of the frames")
 
@@ -76,7 +76,7 @@ data Options = Options
       optFormat :: Format,
       optAmount :: Int,
       optWidth :: Int,
-      optHeight :: Int,
+      optHeight :: Int
     }
 
 opts :: Parser Options
@@ -85,12 +85,12 @@ opts = Options <$> dirpath <*> name <*> format <*> amount <*> width <*> height
 finalParser :: ParserInfo Options
 finalParser = info (opts <**> helper)
     (fullDesc
-     <> progDesc "Generate a certain amount of frames, which can be used to generate a video.\n
-                  The frames are generated in a way, that the difference between each consecutive frame is high.\n
-                  Therefore the resulting video will take up relatively much space.\n
-                  To be more precise, the frames will look like noise in an old tv, but in red instead of white."
-     <> header "Generate a certain amount of frames, which can be used to generate a video.\n
-                The resulting video is made to take up relatively much space.")
+     <> progDesc ("Generate a certain amount of frames, which can be used to generate a video.\n"
+                  ++ "The frames are generated in a way, that the difference between each consecutive frame is high.\n"
+                  ++ "Therefore the resulting video will take up relatively much space.\n"
+                  ++ "To be more precise, the frames will look like noise in an old tv, but in red instead of white.")
+     <> header ("Generate a certain amount of frames, which can be used to generate a video.\n"
+                ++ "The resulting video is made to take up relatively much space."))
 
 --The call to the executable must contain the following arguments:
 --First Argument: Path of the directory, where the frames should be saved.
@@ -104,20 +104,7 @@ main :: IO ()
 main = do 
     opts <- execParser finalParser
     formatWriter <- return (lookup (optFormat opts) formats)
-    generateFrames (optDir opts) (optName opts) (optFormat opts) (optAmount opts) (optWidth opts) (optHeight) (fromJust formatWriter)
-
-    
-
-
-
---main = do
---    args <- getArgs
---    let formatDesired = map toLower (args !! 2)
---    format <- return (lookup formatDesired formats)
---    if isNothing format then
---        putStrLn "Error: Desired Format not found. Format must be either png, tga or bmp."
---    else do
---        generateFrames (args !! 0) (args !! 1) formatDesired (read (args !! 3)) (read (args !! 4)) (read (args !! 5)) (fromJust format)
+    generateFrames (optDir opts) (optName opts) (optFormat opts) (optAmount opts) (optWidth opts) (optHeight opts) (fromJust formatWriter)
 
 generateFrames :: DirectoryPath -> FileName -> Format -> Amount -> Width -> Height -> FormatWriter -> IO ()
 generateFrames dirpath filename format n w h writer = do

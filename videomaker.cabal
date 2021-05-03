@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e90b7842e5ac4eee946a9491f349c7ba27d06e5d24ef27a1c215d8604536eb4b
+-- hash: 5b27c90da50076f496c7f167efb636744aee34c0aa6a69a587063cae21b92176
 
 name:           videomaker
 version:        0.1.0.0
@@ -34,6 +34,7 @@ library
       src
   build-depends:
       base >=4.7 && <5
+    , optparse-applicative
     , stb-image-redux
     , vector
   default-language: Haskell2010
@@ -47,6 +48,7 @@ executable videomaker-exe
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , optparse-applicative
     , stb-image-redux
     , vector
     , videomaker
@@ -62,6 +64,7 @@ test-suite videomaker-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , optparse-applicative
     , stb-image-redux
     , vector
     , videomaker
