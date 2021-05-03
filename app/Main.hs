@@ -53,7 +53,7 @@ amount :: Parser Int
 amount = option auto
     (long "amount"
     <> short 'a'
-    <> metavar "Amount of Frames"
+    <> metavar "Amount"
     <> help "The amount of frames that should be created")
 
 width :: Parser Int
