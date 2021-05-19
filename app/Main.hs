@@ -6,6 +6,7 @@ import System.Environment
 import Data.Char
 import Data.Maybe
 import Options.Applicative
+import System.Process
 
 type Amount = Int
 type FormatWriter = (FilePath -> Image RGBColor -> IO ())
@@ -61,14 +62,22 @@ width = option auto
     (long "width"
     <> short 'w'
     <> metavar "Width"
-    <> help "Width of the frames")
+    <> help "Width of the frames in px.")
 
 height :: Parser Int
 height = option auto
     (long "height"
     <> short 'h'
     <> metavar "Height"
-    <> help "Height of the frames")
+    <> help "Height of the frames in px.")
+
+render :: Parser Bool
+render = switch
+    (long "render"
+    <> short 'r'
+    <> help ("Whether the created frames should be rendered into a video. This executes a standard call to ffmpeg, so if"
+    ++ "you have specific needs, you need to do the video rendering yourself (e.g. by providing the right arguments to ffmpeg)."
+    ++ "Requires ffmpeg to be installed and in PATH."))
 
 data Options = Options
     { optDir :: String,
@@ -76,11 +85,12 @@ data Options = Options
       optFormat :: Format,
       optAmount :: Int,
       optWidth :: Int,
-      optHeight :: Int
+      optHeight :: Int,
+      optRender :: Bool
     }
 
 opts :: Parser Options
-opts = Options <$> dirpath <*> name <*> format <*> amount <*> width <*> height
+opts = Options <$> dirpath <*> name <*> format <*> amount <*> width <*> height <*> render
 
 finalParser :: ParserInfo Options
 finalParser = info (opts <**> helper)
@@ -96,15 +106,26 @@ finalParser = info (opts <**> helper)
 --First Argument: Path of the directory, where the frames should be saved.
 --Second Argument: Name of the frames.
 --(Every frame will be named according to the pattern [Name][Framenr].[extension])
---Third Argument: Format of the frames. Only the formats PNG, TGA, BMP are supported.
+--Third Argument (optional): Format of the frames. Only the formats PNG, TGA, BMP are supported. PNG is the default value.
 --Fourth Argument: How many frames should be created.
 --Fifth Argument: Width of the frames
 --Sixth Argument: Height of the frames
+--Seventh Argument (optional): Flag whether ffmpeg should be used after creating the frames.
 main :: IO ()
 main = do 
     opts <- execParser finalParser
     formatWriter <- return (lookup (optFormat opts) formats)
     generateFrames (optDir opts) (optName opts) (optFormat opts) (optAmount opts) (optWidth opts) (optHeight opts) (fromJust formatWriter)
+    putStrLn("Finished generating the frames.")
+    if (optRender opts) then do
+        putStrLn("Start generating the video now.")
+        r <- createProcess (proc "ffmpeg" ["-i " ++ (patternForFrames (optName opts) (optFormat opts)), "video.mp4"]){cwd = Just (optDir opts)}
+        return ()
+    else
+        return ()
+
+patternForFrames :: FileName -> Format -> String
+patternForFrames name format = name ++ "%d." ++ format
 
 generateFrames :: DirectoryPath -> FileName -> Format -> Amount -> Width -> Height -> FormatWriter -> IO ()
 generateFrames dirpath filename format n w h writer = do

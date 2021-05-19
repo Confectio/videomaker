@@ -24,6 +24,7 @@ dependencies:
 - stb-image-redux
 - vector
 - optparse-applicative
+- process
 
 library:
   source-dirs: src
