@@ -20,4 +20,4 @@ generateColor :: Coordinates -> Frame -> RGBColor
 generateColor (x, y) fr = RGBColor (generateRed (x, y) fr) 0 0
 
 generateRed :: Coordinates -> Frame -> W.Word8
-generateRed (x, y) fr = (fromIntegral . round) (sin(fromIntegral (x*y))*128.0 + 128.0)
+generateRed (x, y) fr = (fromIntegral . round) (sin(fromIntegral (x*y*fr))*128.0 + 128.0)
