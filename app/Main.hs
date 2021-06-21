@@ -118,8 +118,8 @@ main = do
     generateFrames (optDir opts) (optName opts) (optFormat opts) (optAmount opts) (optWidth opts) (optHeight opts) (fromJust formatWriter)
     putStrLn("Finished generating the frames.")
     if (optRender opts) then do
-        putStrLn("Start generating the video now.")
-        r <- createProcess (proc "ffmpeg" ["--i", (patternForFrames (optAmount opts) (optName opts) (optFormat opts)), "video.mp4"]){cwd = Just (optDir opts)}
+        putStrLn("Trying to spawn ffmpeg process now...")
+        r <- createProcess (shell $ "ffmpeg -i " ++ (patternForFrames (optAmount opts) (optName opts) (optFormat opts)) ++ " video.mp4"){cwd = Just (optDir opts), create_new_console = True}
         return ()
     else
         return ()
@@ -134,11 +134,12 @@ generateFrames :: DirectoryPath -> FileName -> Format -> Amount -> Width -> Heig
 generateFrames dirpath filename format n w h writer = do
                 if n == 0 then
                     return ()
-                else do
-                    writer (dirpath ++ "\\" ++ filename ++ show n ++ "." ++ format) (buildImage w h n)
-                    if (magnitude n) < (magnitude (n + 1)) then
+                else
+                    if (magnitude n) < (magnitude (n + 1)) then do
                         -- This fills the following Framenumbers with zeros. F.ex. if the original amount is 3623
                         -- then the first frame will be named filename3623.format but the last will be named filename0001.format
+                        writer (dirpath ++ "\\" ++ (filename ++ "0") ++ show n ++ "." ++ format) (buildImage w h n)
                         generateFrames dirpath (filename ++ "0") format (n - 1) w h writer
-                    else 
+                    else do
+                        writer (dirpath ++ "\\" ++ filename ++ show n ++ "." ++ format) (buildImage w h n)
                         generateFrames dirpath filename format (n - 1) w h writer
