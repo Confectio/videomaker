@@ -25,6 +25,7 @@ dependencies:
 - vector
 - optparse-applicative
 - process
+- reanimate
 
 library:
   source-dirs: src

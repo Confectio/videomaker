@@ -7,6 +7,7 @@ import Data.Char
 import Data.Maybe
 import Options.Applicative
 import System.Process
+import qualified Reanimate.Render as RR
 
 type Amount = Int
 type FormatWriter = (FilePath -> Image RGBColor -> IO ())
@@ -16,46 +17,56 @@ type Format = String
 type Width = Int
 type Height = Int
 
-formats :: [(String, FormatWriter)]
-formats = [("png", writePNG),
-           ("tga", writeTGA),
-           ("bmp", writeBMP)]
+formatsClassic :: [(String, FormatWriter)]
+formatsClassic = [("png", writePNG),
+                  ("tga", writeTGA),
+                  ("bmp", writeBMP)]
 
+formatsReanimate :: [(String, RR.Format)]
+formatsReanimate = [("mp4", RR.RenderMp4),
+                    ("gif", RR.RenderGif),
+                    ("webm", RR.RenderWebm)]
 
 dirpath :: Parser String
 dirpath = strOption
-  (long "directory"
-  <> short 'd'
+  (long "dir"
   <> metavar "Path"
-  <> help "Path of the directory, where the frames should be saved")
+  <> help "Path of the directory, where the frames/animation should be saved")
 
 name :: Parser String
 name = strOption
     (long "name"
     <> short 'n'
     <> metavar "Name"
-    <> help "Name of the frames. Every frame will be named according to the pattern [Name][Framenr].[extension]")
+    <> help "Name of the frames/animation. Every frame will be named according to the pattern [Name][Framenr].[extension]")
 
-validateFormat :: String -> Either String Format
-validateFormat s =  if isNothing (lookup format formats) then
+validateFormatClassic :: String -> Either String Format
+validateFormatClassic s =  if isNothing (lookup format formatsClassic) then
                         Left "Error: Desired Format not supported. Format must be either png, tga or bmp."
                     else   
                         Right format
     where format = map toLower s
 
+validateFormatReanimate :: String -> Either String Format
+validateFormatReanimate s =  if isNothing (lookup format formatsReanimate) then
+                        Left "Error: Desired Format not supported. Format must be either mp4, gif or webm."
+                    else   
+                        Right format
+    where format = map toLower s
+
 format :: Parser Format
-format = option (eitherReader validateFormat) (long "format"
+format = strOption
+    (long "format"
     <> short 'f'
-    <> metavar "Format"
-    <> value "png"
-    <> help "Format of the frames. Only PNG, TGA and BMP are supported, default is PNG.")
+    <> metavar "Format of Frames (N) | Format of Animation (T)"
+    <> help "Format of the frames, when in noise mode. Only PNG, TGA and BMP are supported, default is PNG. Format of the animation, when in triangle mode. Only mp4, gif and webm are supported.")
 
 amount :: Parser Int
 amount = option auto
     (long "amount"
     <> short 'a'
-    <> metavar "Amount"
-    <> help "The amount of frames that should be created")
+    <> metavar "Amount of Frames (N) | Amount of Triangles (T)"
+    <> help "In noise mode, this is the amount of frames that should be created, in triangle mode, this is the amount of triangles per 'wave' in the animation")
 
 width :: Parser Int
 width = option auto
@@ -72,25 +83,51 @@ height = option auto
     <> help "Height of the frames in px.")
 
 render :: Parser Bool
-render = switch
+render = option auto
     (long "render"
     <> short 'r'
-    <> help ("Whether the created frames should be rendered into a video. This executes a standard call to ffmpeg, so if"
-    ++ "you have specific needs, you need to do the video rendering yourself (e.g. by providing the right arguments to ffmpeg)."
-    ++ "Requires ffmpeg to be installed and in PATH."))
+    <> help ("Whether the created frames should be rendered into a video. Only used in noise mode. This executes a standard call to ffmpeg, so if"
+    ++ "you have specific needs, you need to do the video rendering yourself (e.g. by providing the right arguments to a ffmpeg call)."
+    ++ "Requires ffmpeg to be installed and in PATH.")
+    <> value False
+    <> metavar "Render or not (N)")
+
+noise :: Parser Bool
+noise = option auto
+    (long "noise"
+    <> help "Whether you want to use the noise-generating function or the moving triangle generating function."
+    <> metavar "Noise or Triangle")
+
+duration :: Parser Double
+duration = option auto
+    (long "duration"
+    <> short 'd'
+    <> metavar "Duration (T)"
+    <> value 27
+    <> help "Duration of the Animation (in seconds). Only used in triangle mode. The duration in noise mode is given by the amount of frames.")
+
+fps :: Parser Int
+fps = option auto
+    (long "fps"
+    <> metavar "FPS (T)"
+    <> value 60
+    <> help "Frames per Second. Only used in triangle mode.")
 
 data Options = Options
-    { optDir :: String,
+    { optNoise :: Bool,
+      optDir :: String,
       optName :: String,
       optFormat :: Format,
       optAmount :: Int,
       optWidth :: Int,
       optHeight :: Int,
-      optRender :: Bool
+      optRender :: Bool,
+      optDuration :: Double,
+      optFps :: Int
     }
 
 opts :: Parser Options
-opts = Options <$> dirpath <*> name <*> format <*> amount <*> width <*> height <*> render
+opts = Options <$> noise <*> dirpath <*> name <*> format <*> amount <*> width <*> height <*> render <*> duration <*> fps
 
 finalParser :: ParserInfo Options
 finalParser = info (opts <**> helper)
@@ -114,15 +151,22 @@ finalParser = info (opts <**> helper)
 main :: IO ()
 main = do 
     opts <- execParser finalParser
-    formatWriter <- return (lookup (optFormat opts) formats)
-    generateFrames (optDir opts) (optName opts) (optFormat opts) (optAmount opts) (optWidth opts) (optHeight opts) (fromJust formatWriter)
-    putStrLn("Finished generating the frames.")
-    if (optRender opts) then do
-        putStrLn("Trying to spawn ffmpeg process now...")
-        r <- createProcess (shell $ "ffmpeg -i " ++ (patternForFrames (optAmount opts) (optName opts) (optFormat opts)) ++ " video.mp4"){cwd = Just (optDir opts), create_new_console = True}
-        return ()
-    else
-        return ()
+    if (optNoise opts) then do
+
+        formatWriter <- return (lookup (optFormat opts) formatsClassic)
+        generateFrames (optDir opts) (optName opts) (optFormat opts) (optAmount opts) (optWidth opts) (optHeight opts) (fromJust formatWriter)
+        putStrLn("Finished generating the frames.")
+        if (optRender opts) then do
+            putStrLn("Trying to spawn ffmpeg process now...")
+            r <- createProcess (shell $ "ffmpeg -i " ++ (patternForFrames (optAmount opts) (optName opts) (optFormat opts)) ++ " " ++ (optName opts) ++ ".mp4"){cwd = Just (optDir opts), create_new_console = True}
+            return ()
+        else
+            return ()
+    else do
+        formatRR <- return (lookup (optFormat opts) formatsReanimate)
+        filepath <- return ((optDir opts) ++ "\\" ++ (optName opts) ++ "." ++ (optFormat opts))
+        renderAnimation (optDuration opts) (optAmount opts) filepath (fromJust formatRR) (optWidth opts) (optHeight opts) (optFps opts)
+
 
 patternForFrames :: Amount -> FileName -> Format -> String
 patternForFrames n name format = name ++ "%0" ++  show (magnitude n) ++ "d." ++ format
