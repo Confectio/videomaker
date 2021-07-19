@@ -138,10 +138,12 @@ finalParser = info (opts <**> helper)
                   ++ "There are two modes: Noise mode and Triangle mode.\n"
                   ++ "Noise mode creates an animation of...noise.\n"
                   ++ "Triangle mode creates an animation of moving triangles.\n"
-                  ++ "Do note, that even though the arguments might still have the same abbreviation,\n"
+                  ++ "Do note, that even though the arguments might have the same abbreviation,\n"
                   ++ "they might do different things in noise and triangle mode, respectively.\n"
                   ++ "Also note, that for the animation in Triangle mode, you need an ffmpeg-version installed, that has an svg decoder.\n"
                   ++ "It might also be that the Triangle mode contains errors, since I was not able to extensively test it.\n"
+                  ++ "Furthermore note, that this program is written and tested on windows.\n"
+                  ++ "You might have to change a few things in the code (f.ex. how a path is build) to adjust this program to another platform.\n"
                   ++ "By using the argument '--help', you can retrieve additional information about the arguments.")
      <> header ("Generate a certain amount of frames, which can be used to generate a video.\n"
                 ++ "The resulting video is made to take up relatively much space."))
