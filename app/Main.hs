@@ -86,7 +86,7 @@ render :: Parser Bool
 render = option auto
     (long "render"
     <> short 'r'
-    <> help ("Whether the created frames should be rendered into a video. Only used in noise mode. This executes a standard call to ffmpeg, so if"
+    <> help ("Whether the created frames should be rendered into a video. Only used in noise mode. This executes a standard (windows specific?) call to ffmpeg, so if"
     ++ "you have specific needs, you need to do the video rendering yourself (e.g. by providing the right arguments to a ffmpeg call)."
     ++ "Requires ffmpeg to be installed and in PATH.")
     <> value False
@@ -135,19 +135,17 @@ finalParser = info (opts <**> helper)
      <> progDesc ("Generate a certain amount of frames, which can be used to generate a video.\n"
                   ++ "The frames are generated in a way, that the difference between each consecutive frame is high.\n"
                   ++ "Therefore the resulting video will take up relatively much space.\n"
-                  ++ "To be more precise, the frames will look like noise in an old tv, but in red instead of white.")
+                  ++ "There are two modes: Noise mode and Triangle mode.\n"
+                  ++ "Noise mode creates an animation of...noise.\n"
+                  ++ "Triangle mode creates an animation of moving triangles.\n"
+                  ++ "Do note, that even though the arguments might still have the same abbreviation,\n"
+                  ++ "they might do different things in noise and triangle mode, respectively.\n"
+                  ++ "Also note, that for the animation in Triangle mode, you need an ffmpeg-version installed, that has an svg decoder.\n"
+                  ++ "It might also be that the Triangle mode contains errors, since I was not able to extensively test it.\n"
+                  ++ "By using the argument '--help', you can retrieve additional information about the arguments.")
      <> header ("Generate a certain amount of frames, which can be used to generate a video.\n"
                 ++ "The resulting video is made to take up relatively much space."))
 
---The call to the executable must contain the following arguments:
---First Argument: Path of the directory, where the frames should be saved.
---Second Argument: Name of the frames.
---(Every frame will be named according to the pattern [Name][Framenr].[extension])
---Third Argument (optional): Format of the frames. Only the formats PNG, TGA, BMP are supported. PNG is the default value.
---Fourth Argument: How many frames should be created.
---Fifth Argument: Width of the frames
---Sixth Argument: Height of the frames
---Seventh Argument (optional): Flag whether ffmpeg should be used after creating the frames.
 main :: IO ()
 main = do 
     opts <- execParser finalParser
